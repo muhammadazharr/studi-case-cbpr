@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question Box - Duta Rupiah Championship 2025</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- REVISI 2: Mengganti font menjadi DM Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* REVISI 2: Menggunakan font DM Sans untuk seluruh halaman */
+        body {
+            font-family: 'DM Sans', sans-serif;
+            /* REVISI 1: Mengganti warna background */
+            background-color: #1634a7;
+        }
+
+        /* Perspektif untuk efek 3D pada container */
+        .perspective-container {
+            perspective: 1000px;
+        }
+
+        /* Container untuk kartu yang akan berputar */
+        .question-box-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Transisi flip dengan efek 'bounce' */
+            transform-style: preserve-3d;
+        }
+        
+        /* REVISI 4: Menambahkan animasi interaktif saat diklik (sebelum flip) */
+        .question-box:not(.disabled):active .question-box-inner {
+            transform: scale(0.95); /* Sedikit mengecil saat ditekan */
+            transition: transform 0.1s ease-out;
+        }
+        
+        /* Menambahkan class 'flipped' akan memutar kartu */
+        .question-box.flipped .question-box-inner {
+            transform: rotateY(180deg);
+        }
+
+        /* Styling untuk bagian depan dan belakang kartu */
+        .question-box-front, .question-box-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 1rem; /* Sudut yang membulat */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Bagian depan kartu (nomor) */
+        .question-box-front {
+            /* REVISI 3: Mengganti warna box */
+            background-color: #ffad41;
+            color: #1634a7; /* Menyesuaikan warna teks dengan background baru */
+        }
+
+        /* Bagian belakang kartu (pertanyaan) */
+        .question-box-back {
+            background-color: #112a80; /* Warna biru yang lebih gelap untuk kontras */
+            color: white;
+            transform: rotateY(180deg);
+            padding: 20px;
+        }
+
+        /* Styling untuk kartu yang sudah dipilih */
+        .question-box.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .question-box:not(.disabled) {
+            cursor: pointer;
+        }
+        
+        /* Modal untuk menampilkan pertanyaan secara penuh */
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+
+    <!-- Header Aplikasi -->
+    <header class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-black tracking-tight uppercase">Sesi Tanya Jawab</h1>
+        <p class="text-xl md:text-2xl text-gray-300 mt-2">CBP Rupiah Championship 2025</p>
+        <p class="text-lg text-gray-400">Kantor Perwakilan Bank Indonesia Provinsi Gorontalo</p>
+    </header>
+
+    <!-- Grid untuk Kotak Pertanyaan -->
+    <main id="question-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 md:gap-6 w-full max-w-6xl mx-auto">
+        <!-- Kotak pertanyaan akan dibuat oleh JavaScript -->
+    </main>
+
+    <!-- Tombol Kontrol untuk Operator -->
+    <footer class="mt-8">
+        <button id="reset-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105">
+            Reset Sesi
+        </button>
+    </footer>
+
+    <!-- Modal untuk menampilkan pertanyaan penuh -->
+    <div id="question-modal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 opacity-0 pointer-events-none z-50">
+        <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl p-8 md:p-12 relative transform scale-95 transition-transform">
+            <h2 class="text-2xl md:text-3xl font-bold mb-4" style="color: #1634a7;">Pertanyaan untuk Duta:</h2>
+            <p id="modal-question-text" class="text-xl md:text-2xl leading-relaxed"></p>
+            <button id="close-modal-button" class="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center font-bold text-xl">&times;</button>
+        </div>
+    </div>
+
+    <script>
+        // --- PENGATURAN: Ganti pertanyaan di bawah ini ---
+        const questions = [
+            { id: 1, question: "Jelaskan 3 peran utama Bank Indonesia dalam perekonomian nasional sesuai dengan Undang-Undang." },
+            { id: 2, question: "Apa yang dimaksud dengan QRIS dan bagaimana dampaknya terhadap inklusi keuangan di Gorontalo?" },
+            { id: 3, question: "Sebagai Duta Rupiah, bagaimana cara Anda mengedukasi masyarakat untuk menerapkan Cinta, Bangga, dan Paham Rupiah?" },
+            { id: 4, question: "Jelaskan apa itu inflasi dan bagaimana Bank Indonesia mengendalikannya agar tetap stabil?" },
+            { id: 5, question: "Apa saja ciri-ciri keaslian uang Rupiah yang perlu diketahui masyarakat untuk menghindari uang palsu?" },
+            { id: 6, question: "Bagaimana teknologi digital mengubah cara Bank Indonesia dalam menjalankan tugasnya di era modern?" },
+            { id: 7, question: "Menurut Anda, apa tantangan terbesar dalam menjaga stabilitas nilai tukar Rupiah saat ini?" },
+            { id: 8, question: "Jelaskan konsep 'Clean Money Policy' atau kebijakan Uang Layak Edar yang dijalankan oleh Bank Indonesia." },
+            { id: 9, question: "Bagaimana peran generasi muda, seperti Anda, dalam mendukung Gerakan Nasional Non-Tunai (GNNT)?" },
+            { id: 10, question: "Apa visi Anda jika terpilih menjadi Duta Rupiah untuk Provinsi Gorontalo?" }
+        ];
+
+        // --- Logika Aplikasi ---
+        const grid = document.getElementById('question-grid');
+        const resetButton = document.getElementById('reset-button');
+        const modal = document.getElementById('question-modal');
+        const modalQuestionText = document.getElementById('modal-question-text');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+        function createQuestionBoxes() {
+            grid.innerHTML = '';
+            const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+
+            shuffledQuestions.forEach((q, index) => {
+                const boxNumber = index + 1;
+                const box = document.createElement('div');
+                box.className = 'question-box perspective-container aspect-square';
+                box.dataset.question = q.question;
+
+                box.innerHTML = `
+                    <div class="question-box-inner">
+                        <div class="question-box-front">
+                            <span class="text-6xl md:text-8xl font-black">${boxNumber}</span>
+                            <span class="text-xl font-bold uppercase tracking-widest">Pilih Kotak</span>
+                        </div>
+                        <div class="question-box-back">
+                            <h3 class="font-bold text-lg md:text-xl">Pertanyaan No. ${boxNumber}</h3>
+                            <p class="text-sm md:text-base mt-2">${q.question.substring(0, 50)}...</p>
+                        </div>
+                    </div>
+                `;
+
+                box.addEventListener('click', () => handleBoxClick(box), { once: true }); // Mencegah klik ganda
+                grid.appendChild(box);
+            });
+        }
+
+        function handleBoxClick(boxElement) {
+            if (boxElement.classList.contains('flipped')) return;
+
+            boxElement.classList.add('flipped');
+            boxElement.classList.add('disabled');
+            
+            setTimeout(() => {
+                showModal(boxElement.dataset.question);
+            }, 800);
+        }
+
+        function showModal(question) {
+            modalQuestionText.textContent = question;
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.remove('scale-95');
+        }
+
+        function hideModal() {
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modal.querySelector('div').classList.add('scale-95');
+        }
+
+        resetButton.addEventListener('click', () => {
+             // Tambahkan konfirmasi sederhana sebelum reset
+            if (confirm('Apakah Anda yakin ingin mereset sesi dan mengacak ulang pertanyaan?')) {
+                createQuestionBoxes();
+            }
+        });
+        
+        closeModalButton.addEventListener('click', hideModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                hideModal();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', createQuestionBoxes);
+    </script>
+</body>
+</html>
