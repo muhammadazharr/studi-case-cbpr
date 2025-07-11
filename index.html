@@ -7,73 +7,62 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- REVISI 2: Mengganti font menjadi DM Sans -->
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        /* REVISI 2: Menggunakan font DM Sans untuk seluruh halaman */
         body {
             font-family: 'DM Sans', sans-serif;
-            /* REVISI 1: Mengganti warna background */
             background-color: #1634a7;
         }
 
-        /* Perspektif untuk efek 3D pada container */
         .perspective-container {
             perspective: 1000px;
         }
 
-        /* Container untuk kartu yang akan berputar */
         .question-box-inner {
             position: relative;
             width: 100%;
             height: 100%;
             text-align: center;
-            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55); /* Transisi flip dengan efek 'bounce' */
+            transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             transform-style: preserve-3d;
         }
         
-        /* REVISI 4: Menambahkan animasi interaktif saat diklik (sebelum flip) */
         .question-box:not(.disabled):active .question-box-inner {
-            transform: scale(0.95); /* Sedikit mengecil saat ditekan */
+            transform: scale(0.95);
             transition: transform 0.1s ease-out;
         }
         
-        /* Menambahkan class 'flipped' akan memutar kartu */
         .question-box.flipped .question-box-inner {
             transform: rotateY(180deg);
         }
 
-        /* Styling untuk bagian depan dan belakang kartu */
         .question-box-front, .question-box-back {
             position: absolute;
             width: 100%;
             height: 100%;
-            -webkit-backface-visibility: hidden; /* Safari */
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            border-radius: 1rem; /* Sudut yang membulat */
+            border-radius: 1rem;
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        /* Bagian depan kartu (nomor) */
+        /* REVISI TERAKHIR: Mengganti warna box menjadi putih */
         .question-box-front {
-            /* REVISI 3: Mengganti warna box */
-            background-color: #ffad41;
-            color: #1634a7; /* Menyesuaikan warna teks dengan background baru */
+            background-color: #ffffff;
+            color: #1634a7;
         }
 
-        /* Bagian belakang kartu (pertanyaan) */
         .question-box-back {
-            background-color: #112a80; /* Warna biru yang lebih gelap untuk kontras */
+            background-color: #112a80;
             color: white;
             transform: rotateY(180deg);
             padding: 20px;
         }
 
-        /* Styling untuk kartu yang sudah dipilih */
         .question-box.disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -83,17 +72,46 @@
             cursor: pointer;
         }
         
-        /* Modal untuk menampilkan pertanyaan secara penuh */
-        .modal {
+        .modal, .confirm-modal {
             transition: opacity 0.3s ease;
+        }
+        
+        #timer-display {
+            font-size: 6.5rem;
+            line-height: 1;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s ease;
+        }
+        
+        .timer-running {
+            color: #f97316 !important; /* Oranye */
+        }
+
+        .timer-warning {
+            color: #ef4444 !important; /* Merah (Prioritas lebih tinggi) */
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
         }
     </style>
 </head>
-<body class="text-white min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+<!-- REVISI TERAKHIR: Menambahkan padding atas 10px (dibulatkan dengan pt-4) -->
+<body class="text-white min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 pt-4">
 
     <!-- Header Aplikasi -->
     <header class="text-center mb-8">
-        <h1 class="text-4xl md:text-5xl font-black tracking-tight uppercase">Studi Case Top 10 Finalis Duta Muda</h1>
+        <!-- REVISI TERAKHIR: Menambahkan logo -->
+        
+        
+        <h1 class="text-4xl md:text-5xl font-black tracking-tight uppercase">STUDI CASE TOP 10 FINALIS DUTA MUDA</h1>
         <p class="text-xl md:text-2xl text-gray-300 mt-2">CBP Rupiah Championship 2025</p>
         <p class="text-lg text-gray-400">Kantor Perwakilan Bank Indonesia Provinsi Gorontalo</p>
     </header>
@@ -110,17 +128,42 @@
         </button>
     </footer>
 
-    <!-- Modal untuk menampilkan pertanyaan penuh -->
+    <!-- Modal untuk menampilkan pertanyaan penuh & TIMER -->
     <div id="question-modal" class="modal fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 opacity-0 pointer-events-none z-50">
-        <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl p-8 md:p-12 relative transform scale-95 transition-transform">
-            <h2 class="text-2xl md:text-3xl font-bold mb-4" style="color: #1634a7;">Pertanyaan untuk Duta:</h2>
-            <p id="modal-question-text" class="text-xl md:text-2xl leading-relaxed"></p>
+        <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-5xl p-8 md:p-12 relative transform scale-95 transition-transform flex flex-col md:flex-row gap-8">
+            <!-- Sisi Kiri: Pertanyaan -->
+            <div class="w-full md:w-3/5 flex flex-col justify-center">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4" style="color: #1634a7;">Pertanyaan untuk Duta:</h2>
+                <p id="modal-question-text" class="text-xl md:text-2xl leading-relaxed"></p>
+            </div>
+            <!-- Sisi Kanan: Timer -->
+            <div class="w-full md:w-2/5 flex flex-col items-center justify-center bg-gray-100 rounded-lg p-8">
+                <h3 class="text-xl font-bold text-gray-500 uppercase tracking-wider mb-2">Waktu Menjawab</h3>
+                <div id="timer-display" class="my-4" style="color: #1634a7;">01:00</div>
+                <div class="flex space-x-2">
+                    <button id="start-timer-button" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg">Mulai</button>
+                    <button id="stop-timer-button" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg">Berhenti</button>
+                    <button id="reset-timer-button" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Reset</button>
+                </div>
+            </div>
             <button id="close-modal-button" class="absolute top-4 right-4 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center font-bold text-xl">&times;</button>
         </div>
     </div>
 
+    <!-- Modal Konfirmasi untuk Reset -->
+    <div id="confirm-modal" class="confirm-modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 opacity-0 pointer-events-none z-50">
+        <div class="bg-white text-gray-800 rounded-lg shadow-xl w-full max-w-sm p-6 text-center">
+            <p id="confirm-message" class="text-lg mb-6">Apakah Anda yakin?</p>
+            <div class="flex justify-center space-x-4">
+                <button id="confirm-yes-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Ya</button>
+                <button id="confirm-no-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg">Tidak</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
-        // --- PENGATURAN: Ganti pertanyaan di bawah ini ---
+        // --- PENGATURAN PERTANYAAN ---
         const questions = [
             { id: 1, question: "Jelaskan 3 peran utama Bank Indonesia dalam perekonomian nasional sesuai dengan Undang-Undang." },
             { id: 2, question: "Apa yang dimaksud dengan QRIS dan bagaimana dampaknya terhadap inklusi keuangan di Gorontalo?" },
@@ -134,13 +177,98 @@
             { id: 10, question: "Apa visi Anda jika terpilih menjadi Duta Rupiah untuk Provinsi Gorontalo?" }
         ];
 
-        // --- Logika Aplikasi ---
+        // --- ELEMEN DOM ---
         const grid = document.getElementById('question-grid');
         const resetButton = document.getElementById('reset-button');
         const modal = document.getElementById('question-modal');
         const modalQuestionText = document.getElementById('modal-question-text');
         const closeModalButton = document.getElementById('close-modal-button');
+        
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerBtn = document.getElementById('start-timer-button');
+        const stopTimerBtn = document.getElementById('stop-timer-button');
+        const resetTimerBtn = document.getElementById('reset-timer-button');
 
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmYesBtn = document.getElementById('confirm-yes-button');
+        const confirmNoBtn = document.getElementById('confirm-no-button');
+
+        // --- LOGIKA TIMER & SUARA ---
+        const TIME_LIMIT = 60;
+        let timeLeft = TIME_LIMIT;
+        let timerInterval = null;
+        let audioContext;
+        let onConfirmCallback = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTick(isLastTick = false) {
+            if (!audioContext) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + (isLastTick ? 0.5 : 0.1));
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(isLastTick ? 440 : 880, audioContext.currentTime);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + (isLastTick ? 0.5 : 0.1));
+        }
+        
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            
+            if (timeLeft <= 10) {
+                timerDisplay.classList.add('timer-warning');
+            } else {
+                timerDisplay.classList.remove('timer-warning');
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) return;
+            initAudio();
+            timerDisplay.classList.add('timer-running');
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+
+                if (timeLeft <= 10 && timeLeft > 0) {
+                    playTick();
+                }
+
+                if (timeLeft <= 0) {
+                    stopTimer();
+                    playTick(true);
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            timerDisplay.classList.remove('timer-running');
+        }
+
+        function resetTimer() {
+            stopTimer();
+            timeLeft = TIME_LIMIT;
+            updateTimerDisplay();
+        }
+
+        // --- LOGIKA APLIKASI UTAMA ---
         function createQuestionBoxes() {
             grid.innerHTML = '';
             const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
@@ -158,54 +286,67 @@
                             <span class="text-xl font-bold uppercase tracking-widest">Pilih Kotak</span>
                         </div>
                         <div class="question-box-back">
-                            <h3 class="font-bold text-lg md:text-xl">Pertanyaan No. ${boxNumber}</h3>
-                            <p class="text-sm md:text-base mt-2">${q.question.substring(0, 50)}...</p>
+                            <h3 class="font-bold text-lg md:text-xl">Pert. No. ${boxNumber}</h3>
+                            <p class="text-sm md:text-base mt-2">${q.question.substring(0, 40)}...</p>
                         </div>
                     </div>
                 `;
 
-                box.addEventListener('click', () => handleBoxClick(box), { once: true }); // Mencegah klik ganda
+                box.addEventListener('click', () => handleBoxClick(box), { once: true });
                 grid.appendChild(box);
             });
         }
 
         function handleBoxClick(boxElement) {
             if (boxElement.classList.contains('flipped')) return;
-
-            boxElement.classList.add('flipped');
-            boxElement.classList.add('disabled');
-            
-            setTimeout(() => {
-                showModal(boxElement.dataset.question);
-            }, 800);
+            boxElement.classList.add('flipped', 'disabled');
+            setTimeout(() => showModal(boxElement.dataset.question), 800);
         }
 
         function showModal(question) {
+            resetTimer();
             modalQuestionText.textContent = question;
             modal.classList.remove('opacity-0', 'pointer-events-none');
             modal.querySelector('div').classList.remove('scale-95');
         }
 
         function hideModal() {
+            stopTimer();
             modal.classList.add('opacity-0', 'pointer-events-none');
             modal.querySelector('div').classList.add('scale-95');
         }
 
-        resetButton.addEventListener('click', () => {
-             // Tambahkan konfirmasi sederhana sebelum reset
-            if (confirm('Apakah Anda yakin ingin mereset sesi dan mengacak ulang pertanyaan?')) {
-                createQuestionBoxes();
-            }
-        });
+        function showConfirmModal(message, callback) {
+            confirmMessage.textContent = message;
+            onConfirmCallback = callback;
+            confirmModal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function hideConfirmModal() {
+            confirmModal.classList.add('opacity-0', 'pointer-events-none');
+            onConfirmCallback = null;
+        }
+
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', createQuestionBoxes);
         
         closeModalButton.addEventListener('click', hideModal);
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                hideModal();
-            }
-        });
         
-        document.addEventListener('DOMContentLoaded', createQuestionBoxes);
+        startTimerBtn.addEventListener('click', startTimer);
+        stopTimerBtn.addEventListener('click', stopTimer);
+        resetTimerBtn.addEventListener('click', resetTimer);
+
+        resetButton.addEventListener('click', () => {
+            showConfirmModal('Apakah Anda yakin ingin mereset sesi dan mengacak ulang pertanyaan?', createQuestionBoxes);
+        });
+
+        confirmYesBtn.addEventListener('click', () => {
+            if (onConfirmCallback) {
+                onConfirmCallback();
+            }
+            hideConfirmModal();
+        });
+        confirmNoBtn.addEventListener('click', hideConfirmModal);
     </script>
 </body>
 </html>
